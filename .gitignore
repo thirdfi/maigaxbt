@@ -1,0 +1,16 @@
+.env
+.idea
+.vscode
+*.pyc
+*.pyo
+*.so
+*.egg-info
+*.egg
+*.egg-link
+*.egg-info
+logs
+media
+staticfiles
+*.sql
+celerybeat-schedule
+.env.dev
