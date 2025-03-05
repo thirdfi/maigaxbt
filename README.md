@@ -1,140 +1,182 @@
-# Aiogram & Django API Template
-## Based on [Django API Template](https://github.com/MaksimZayats/python-django-template)
+# MaigaXBT
 
----
+An innovative AI-powered trading assistant that combines technical analysis with a unique Donald Trump persona to provide trading insights and predictions.
 
-## Table of Contents
-- [Feature Highlights](#feature-highlights)
-- [Configuration Guide](#configuration-guide)
-- [Additional Notes](#additional-notes)
-- [Quick Start Guide](#quick-start-guide)
-   - [Setting Up Locally](#setting-up-locally)
-   - [Setting Up with Docker](#setting-up-with-docker)
+## Overview
 
----
+MaigaXBT is a cutting-edge AI agent that delivers trading insights through an engaging Telegram interface. By leveraging advanced technical indicators and a distinctive Donald Trump persona, it provides users with actionable trading signals while collecting valuable prediction data for AI training.
 
-## Feature Highlights
+## High-Level Protocol Architecture
 
-This Django API Template is designed to be robust, scalable, and secure, with features that cater to modern application development needs. Here's an overview of the advanced features and how they benefit your project:
+```mermaid
+graph TD
+    A[Telegram User] -->|Commands & Queries| B[MaigaXBT Bot Layer]
+    B -->|Process Requests| C[Trump Persona Handler]
+    C -->|Generate Insights| D[AI Analysis Engine]
+    D -->|Technical Analysis| E[Chart API]
+    E -->|Market Data| F[External Data Sources]
+    C -->|Store Predictions| G[Django Backend]
+    G -->|Process Tasks| H[Celery Workers]
+    H -->|Message Queue| I[RabbitMQ]
+    G -->|Cache| J[Redis]
+    G -->|Database| K[PostgreSQL]
+    L[User Predictions] -->|Data Collection| G
+    G -->|Points System| M[Rewards Engine]
+```
 
-- **[Docker & Docker Compose Integration](https://docs.docker.com/compose/)**: Easily set up and scale your application using Docker containers, ensuring consistent environments across development and production.
+## Features
 
-- **[Celery](https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html) with [RabbitMQ](https://rabbitmq.com/) and [Redis](https://redis.io/)**: Leverage Celery for asynchronous task processing, using RabbitMQ as a message broker and Redis as a backend for storing results.
+- **Trump-Persona AI Agent**
+  - Engaging communication style
+  - Memorable trading insights
+  - Interactive user experience
+  - Real-time market commentary
 
-- **[Sentry for Error Tracking](https://sentry.io/)**: Integrate with Sentry for real-time error tracking and monitoring, helping you identify and fix issues rapidly.
+- **Trading Signal Generation**
+  - Technical indicator analysis
+  - Market trend predictions
+  - Entry/exit point suggestions
+  - Risk level assessment
 
-- **[Django Rest Framework (DRF)](https://www.django-rest-framework.org/)**: Use Django Rest Framework for building RESTful APIs, with support for authentication, serialization, and more.
-   - **[DRF Spectacular for OpenAPI](https://drf-spectacular.readthedocs.io/)**: Use DRF Spectacular for OpenAPI documentation, with support for customizing the schema and UI.
-   - **[DRF Simple JWT for Authentication](https://django-rest-framework-simplejwt.readthedocs.io/)**: Use DRF Simple JWT for JSON Web Token authentication, with support for customizing token claims and expiration.
+- **Prediction & Rewards System**
+  - User signal prediction platform
+  - Points-based reward system
+  - Future airdrop eligibility
+  - Leaderboard rankings
 
-- **[Django CORS Headers](https://pypi.org/project/django-cors-headers/)**: Use Django CORS Headers for handling Cross-Origin Resource Sharing (CORS) headers, with support for customizing origins.
+- **Data Collection & Annotation**
+  - User prediction tracking
+  - Signal accuracy analysis
+  - Market sentiment data
+  - Training data generation
 
-- **[Django Silk for Profiling](https://pypi.org/project/django-silk/)**: Utilize Django Silk for profiling and monitoring Django applications, offering insights into performance and optimization.
+- **Technical Analysis Tools**
+  - Multiple timeframe analysis
+  - Custom indicator overlays
+  - Volume analysis
+  - Pattern recognition
 
-- **[Django Axes for Security](https://django-axes.readthedocs.io/)**: Use Django Axes for security, with support for blocking brute force attacks and monitoring login attempts.
+## Use Cases
 
-- **[AWS S3 Integration](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html)**: Option to use Amazon S3 for static and media file storage, enhancing scalability and performance.
+1. **Trading Signal Reception**
+   - Receive AI-generated trading signals
+   - Get Trump-style market commentary
+   - Access risk management insights
+   - Track signal performance
 
-- **Scalability Options**: Configure workers and threads to optimize performance under different load conditions.
+2. **Prediction Participation**
+   - Predict upcoming signals
+   - Earn points for accuracy
+   - Compete on leaderboards
+   - Qualify for future airdrops
 
-- **Up-to-Date Dependencies**: All dependencies are up-to-date as of the latest release. Thanks to [Dependabot](https://dependabot.com/).
+3. **Market Analysis**
+   - Access technical analysis
+   - View market trends
+   - Monitor key indicators
+   - Track prediction accuracy
 
----
+4. **Community Engagement**
+   - Interact with Trump persona
+   - Share trading insights
+   - Track performance metrics
+   - Earn rewards
 
-## Configuration Guide
+## Technical Implementation
 
-The `.env` file is a central place to manage environment variables. It's pre-configured to work with Docker Compose out of the box, without any changes required for initial setup. However, for production deployment, certain secrets must be updated for security reasons.
+### Backend Stack
+- **Django**: Main web framework
+- **Django REST Framework**: API development
+- **Celery**: Asynchronous task processing
+- **RabbitMQ**: Message broker
+- **Redis**: Caching and real-time data
+- **PostgreSQL**: Primary database
 
-1. **Secrets**:
-   - **PostgreSQL, RabbitMQ, Django Secrets**: These are critical for the security of your application. Ensure to replace the placeholder values with strong, unique passwords.
+### Bot Implementation
+- **Aiogram**: Telegram bot framework
+- **Python 3.12**: Core programming language
+- **Chart API**: Technical analysis visualization
+- **AI Models**: Signal generation and Trump persona
 
-2. **Ports**:
-   - **API Port and RabbitMQ Dashboard Port**: Set these ports according to your infrastructure needs. They are exposed to the host machine.
+### Infrastructure
+- **Docker**: Containerization
+- **Docker Compose**: Service orchestration
+- **AWS S3**: File storage (optional)
+- **Sentry**: Error tracking
 
-3. **Performance Tuning**:
-   - **Workers and Threads**: Adjust these values based on your server's capacity and expected load.
+## Quick Start
 
-4. **Application Settings**:
-   - **Host and Environment**: Set these to match your deployment environment.
-   - **Debug and Logging**: Control debug mode and log levels. Set `DJANGO_DEBUG` to `false` in production.
-   - **Localization**: Configure `LANGUAGE_CODE` and `TIME_ZONE` as per your requirements.
+### Prerequisites
+- Python 3.12+
+- Docker and Docker Compose
+- Telegram Bot Token
 
-5. **CORS and CSRF Settings**:
-   - Configure these settings to enhance the security of your application by specifying trusted origins.
+### Local Development Setup
 
-6. **Database Configuration**:
-   - **Postgres Connection**: Set up the database connection using the `DATABASE_URL` variable.
+1. **Clone the Repository**
+   ```bash
+   git clone [repository-url]
+   cd maigaxbt
+   ```
 
----
+2. **Set Up Environment**
+   ```bash
+   python3.12 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements-dev.txt
+   ```
 
-## Additional Notes
-- **Security**: Always prioritize security, especially when handling environment variables and secrets.
-- **Scalability**: Adjust the Docker and Celery configurations as your application scales.
-- **Monitoring**: Regularly monitor the performance and health of your application using integrated tools like Sentry and Silk.
+3. **Configure Environment Variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-By following this guide and utilizing the advanced features, you'll be able to set up a powerful, efficient, and secure Django API environment. Happy coding!
+4. **Start Services**
+   ```bash
+   # Start Django server
+   make run.server.local
+   
+   # Start MaigaXBT bot
+   make run.bot.local
+   ```
 
----
+### Docker Setup
 
-## Quick Start Guide
+1. **Build and Start Services**
+   ```bash
+   docker compose up -d
+   ```
 
-### Setting Up Locally
+2. **Run Migrations**
+   ```bash
+   docker compose exec web python manage.py migrate
+   ```
 
-#### 1. Repository Initialization
-   - **Clone the Repository**
+## License
 
-#### 2. Environment Setup
-   - **Create a Virtual Environment**:
-     ```bash
-     python3.12 -m venv .venv
-     ```
-   - **Activate the Virtual Environment**:
-     ```bash
-     source .venv/bin/activate
-     ```
+This project is temporarily public for review and evaluation purposes. All rights reserved. The code, documentation, and associated materials are proprietary and confidential. Unauthorized copying, modification, distribution, or use of this software is strictly prohibited.
 
-#### 3. Configuration
-   - **Environment Variables**:
-     - Copy the example environment file:
-       ```bash
-       cp .env.example .env
-       ```
-     - _Note: The API can operate without this step, but configuring the environment variables is recommended for full functionality._
+## Additional Information
 
-#### 4. Dependency Management
-   - **Install Dependencies**:
-     ```bash
-     pip install -r requirements-dev.txt
-     ```
+### API Documentation
+- Available at `/api/schema/` when running the server
+- Swagger UI at `/api/schema/swagger-ui/`
+- ReDoc at `/api/schema/redoc/`
 
-#### 5. Database Setup
-   - **Run Migrations**:
-     ```bash
-     make migrate
-     ```
+### Monitoring
+- Sentry integration for error tracking
+- Django Silk for performance profiling
+- Custom logging system
 
-#### 6. Launching the Server
-   - **Start the Local Server**:
-     ```bash
-     make run.server.local
-     ```
+### Security
+- JWT authentication
+- Rate limiting
+- CORS protection
+- Input validation
 
-#### 7. Launching the bot
-   - **Start the bot**:
-     ```bash
-     make run.bot.local
-     ```
+### Contributing
+This is a proprietary project. Please contact the maintainers for any questions or feedback.
 
-### Setting Up with Docker
-
-#### 1. Repository Initialization
-   - **Clone the Repository**
-
-#### 2. Configuration
-   - Follow the steps in the [Configuration Guide](#configuration-guide) to set up the `.env` file.
-
-#### 3. Docker Compose
-   - **Run Docker Compose**:
-     ```bash
-     docker compose up -d
-     ```
+### Support
+For support or inquiries, please reach out through the project's communication channels.
