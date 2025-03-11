@@ -64,23 +64,30 @@ class Bet(BaseModel):
         """Check if the bet was correct based on price movement, notify if won"""
         from tasks.app import send_telegram_message
 
+        username = self.user.user.username 
+        user_id = self.user.user.id    
+        is_group = self.msg_id is not None  
 
         if not self.entry_price:
             return  # Can't check without entry price
-
-        user_id = self.user.user.id
-
+    
         price_change = self.entry_price - Decimal(current_price)
         if (price_change > 0 and self.prediction == 'agree') or (price_change < 0 and self.prediction == 'disagree'):
             self.result = 'won'
             self.user.add_xp(10)
 
-            message = f"🎉 Congratulations! You won! +10 XP for {self.symbol} bet"
+            message = f"🎉 Congratulations! {username} won! +10 XP for {self.symbol} bet" if is_group else \
+                      f"🎉 Congratulations! You won! +10 XP for {self.symbol} bet"
+
+
             send_telegram_message.delay(user_id, message, self.msg_id)
 
         else:
             self.result = 'lost'
-            message = f"☠️ You lost! on {self.symbol} bet"
+
+            message = f"☠️ @{username} lost! on {self.symbol} bet" if is_group else \
+                      f"☠️ You lost! on {self.symbol} bet"
+
             send_telegram_message.delay(user_id, message, self.msg_id)
 
         self.save()

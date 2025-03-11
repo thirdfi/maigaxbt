@@ -99,9 +99,11 @@ async def generate_response(message: types.Message) -> None:
                              entry_price=token_price,
                              symbol=coin_symbol.upper())
 
+    username = message.from_user.username or f"user_{message.from_user.id}"
+
     await message.reply_photo(
         photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
-        reply_markup=up_down_kb(bet_id),
+        reply_markup=up_down_kb(bet_id, message.from_user.id, username, message.chat.type),
         caption=html.escape(analysis_reply))
 
     await add_gen_data_to_db(analysis_reply, message.from_user.id)
@@ -110,7 +112,22 @@ async def generate_response(message: types.Message) -> None:
 
 @router.callback_query()
 async def bet_up_or_down(callback: types.CallbackQuery) -> None:
-    up_down, bet_id = callback.data.split(":")
+    try:
+        data_parts = callback.data.split(":")
+        if len(data_parts) != 5:
+            await callback.answer("Invalid callback data format.", show_alert=True)
+            return
+
+        up_down, bet_id, original_user_id, chat_type, username = data_parts
+        original_user_id = int(original_user_id)
+
+    except ValueError:
+        await callback.answer("Error processing your request.", show_alert=True)
+        return
+
+    if chat_type in ["group", "supergroup"] and callback.from_user.id != original_user_id:
+        await callback.answer("You are not allowed to vote on this prediction!", show_alert=True)
+        return
 
     msg_id = callback.message.message_id
 
@@ -118,9 +135,13 @@ async def bet_up_or_down(callback: types.CallbackQuery) -> None:
         await update_bet(bet_id=bet_id, prediction=up_down, msg_id=msg_id, result="pending")
 
         await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.reply(f"You {up_down} this signal, please wait for your prediction result in next hour!",
-                                      reply_markup=None)
+        if chat_type in ["group", "supergroup"]:
+            response_text = f"@{username} {up_down} this signal, please wait for your prediction result in the next hour!"
+        else:
+            response_text = f"You {up_down} this signal, please wait for your prediction result in the next hour!"
 
+
+        await callback.message.reply(response_text, reply_markup=None)
 
 @router.message(Command(commands=["xpbalance"]))
 async def handle_xpbalance_command(message: types.Message) -> None:
