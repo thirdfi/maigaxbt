@@ -59,37 +59,35 @@ class Bet(BaseModel):
     result = models.CharField(max_length=10, choices=STATUS_CHOICES, default='inactive')
     msg_id = models.IntegerField(null=True, blank=True)
     symbol = models.CharField(max_length=100, null=True, blank=True)
+    chat_type = models.CharField(max_length=20, choices=[('private', 'Private'), ('group', 'Group'), ('supergroup', 'Supergroup')])
+    chat_id = models.BigIntegerField(null=True, blank=True) 
 
     def check_bet_result(self, current_price):
         """Check if the bet was correct based on price movement, notify if won"""
         from tasks.app import send_telegram_message
 
-        username = self.user.user.username 
-        user_id = self.user.user.id    
-        is_group = self.msg_id is not None  
-
         if not self.entry_price:
             return  # Can't check without entry price
-    
-        price_change = self.entry_price - Decimal(current_price)
-        if (price_change > 0 and self.prediction == 'agree') or (price_change < 0 and self.prediction == 'disagree'):
+
+        price_change = Decimal(current_price) - self.entry_price
+        is_correct_prediction = (price_change > 0 and self.prediction == 'agree') or \
+                                (price_change < 0 and self.prediction == 'disagree')
+
+        receiver_id = self.chat_id if self.chat_type in ["group", "supergroup"] else self.user.user.id
+
+        if is_correct_prediction:
             self.result = 'won'
             self.user.add_xp(10)
-
-            message = f"🎉 Congratulations! {username} won! +10 XP for {self.symbol} bet" if is_group else \
-                      f"🎉 Congratulations! You won! +10 XP for {self.symbol} bet"
-
-
-            send_telegram_message.delay(user_id, message, self.msg_id)
-
+            message = (f"🎉 @{self.user.user.username} won the bet on {self.symbol}! +10 XP added! 🎯"
+                       if self.chat_type in ["group", "supergroup"]
+                       else f"🎉 You won the bet on {self.symbol}! +10 XP added! 🎯")
         else:
             self.result = 'lost'
-
-            message = f"☠️ @{username} lost! on {self.symbol} bet" if is_group else \
-                      f"☠️ You lost! on {self.symbol} bet"
-
-            send_telegram_message.delay(user_id, message, self.msg_id)
-
+            message = (f"☠️ @{self.user.user.username} lost the bet on {self.symbol}. Better luck next time! 😢"
+                       if self.chat_type in ["group", "supergroup"]
+                       else f"☠️ You lost the bet on {self.symbol}. Better luck next time! 😢")
+            
+        send_telegram_message.delay(receiver_id, message, self.msg_id)
         self.save()
 
 

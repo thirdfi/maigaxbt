@@ -130,13 +130,18 @@ async def bet_up_or_down(callback: types.CallbackQuery) -> None:
         return
 
     msg_id = callback.message.message_id
+    if chat_type == "group":
+        chat_id = callback.message.chat.id
+    else:
+        chat_id = callback.from_user.id  
 
     if up_down in ["agree", "disagree"]:
-        await update_bet(bet_id=bet_id, prediction=up_down, msg_id=msg_id, result="pending")
+        print(f"chat_type: {chat_type}")
+        await update_bet(bet_id=bet_id, prediction=up_down, msg_id=msg_id, result="pending", chat_type=chat_type, chat_id=chat_id)
 
         await callback.message.edit_reply_markup(reply_markup=None)
         if chat_type in ["group", "supergroup"]:
-            response_text = f"@{username} {up_down} this signal, please wait for your prediction result in the next hour!"
+            response_text = f"@{username} {up_down} this signal, @{username} please wait for your prediction result in the next hour!"
         else:
             response_text = f"You {up_down} this signal, please wait for your prediction result in the next hour!"
 
