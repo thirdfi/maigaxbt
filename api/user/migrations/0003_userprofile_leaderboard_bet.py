@@ -126,6 +126,20 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    "chat_type",
+                    models.CharField(
+                        max_length=20,
+                        choices=[("private", "Private"), ("group", "Group"), ("supergroup", "Supergroup")],
+                        default="private",
+                    ),
+                ),
+                (
+                    "chat_id", 
+                    models.BigIntegerField(
+                        null=True, blank=True
+                        )
+                ),
+                (
                     "created_by",
                     models.ForeignKey(
                         blank=True,
