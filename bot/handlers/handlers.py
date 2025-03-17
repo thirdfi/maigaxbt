@@ -9,7 +9,7 @@ import ast
 from aiogram import Router, types, F
 from aiogram.filters import Command
 
-from api.gpt.gpt_client import get_analysis, understand_user_prompt, async_generate_reply
+from api.gpt.ai_model_client import get_analysis, understand_user_prompt, async_generate_reply
 from api.helpers.helper import async_get_crypto_price
 from api.user.models import User
 from bot.helper import async_request_chart, handle_unknown_coin
@@ -101,6 +101,7 @@ async def generate_response(message: types.Message) -> None:
 
     username = message.from_user.username or f"user_{message.from_user.id}"
 
+    print("Full Response Text:", repr(analysis_reply))  
     await message.reply_photo(
         photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
         reply_markup=up_down_kb(bet_id, message.from_user.id, username, message.chat.type),
@@ -193,7 +194,7 @@ async def handle_other_messages(message: types.Message) -> None:
         entry_price=token_price,
         symbol=symbol.upper()
     )
-
+    
     await message.reply_photo(
         photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
         reply_markup=up_down_kb(bet_id),
