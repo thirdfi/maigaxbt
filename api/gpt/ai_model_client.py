@@ -41,8 +41,7 @@ async def get_analysis(symbol: str, coin_name: str, interval: str, limit: int, u
                 return f"API Error: {response.status} - {response_text}"
 
             try:
-                result = await response.json()
-                # return result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")
+                result = await response.json()            
                 response_content = result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")      
                 print("response_content: ", response_content)          
                 cleaned_content = re.sub(r'<think>.*?</think>', '', response_content, flags=re.DOTALL)
