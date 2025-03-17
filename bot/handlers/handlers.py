@@ -9,7 +9,7 @@ import ast
 from aiogram import Router, types, F
 from aiogram.filters import Command
 
-from api.gpt.gpt_client import get_analysis, understand_user_prompt, async_generate_reply
+from api.gpt.ai_model_client import get_analysis, understand_user_prompt, async_generate_reply
 from api.helpers.helper import async_get_crypto_price
 from api.user.models import User
 from bot.helper import async_request_chart, handle_unknown_coin
@@ -99,9 +99,12 @@ async def generate_response(message: types.Message) -> None:
                              entry_price=token_price,
                              symbol=coin_symbol.upper())
 
+    username = message.from_user.username or f"user_{message.from_user.id}"
+
+    print("Full Response Text:", repr(analysis_reply))  
     await message.reply_photo(
         photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
-        reply_markup=up_down_kb(bet_id),
+        reply_markup=up_down_kb(bet_id, message.from_user.id, username, message.chat.type),
         caption=html.escape(analysis_reply))
 
     await add_gen_data_to_db(analysis_reply, message.from_user.id)
@@ -110,17 +113,41 @@ async def generate_response(message: types.Message) -> None:
 
 @router.callback_query()
 async def bet_up_or_down(callback: types.CallbackQuery) -> None:
-    up_down, bet_id = callback.data.split(":")
+    try:
+        data_parts = callback.data.split(":")
+        if len(data_parts) != 5:
+            await callback.answer("Invalid callback data format.", show_alert=True)
+            return
+
+        up_down, bet_id, original_user_id, chat_type, username = data_parts
+        original_user_id = int(original_user_id)
+
+    except ValueError:
+        await callback.answer("Error processing your request.", show_alert=True)
+        return
+
+    if chat_type in ["group", "supergroup"] and callback.from_user.id != original_user_id:
+        await callback.answer("You are not allowed to vote on this prediction!", show_alert=True)
+        return
 
     msg_id = callback.message.message_id
+    if chat_type == "group":
+        chat_id = callback.message.chat.id
+    else:
+        chat_id = callback.from_user.id  
 
     if up_down in ["agree", "disagree"]:
-        await update_bet(bet_id=bet_id, prediction=up_down, msg_id=msg_id, result="pending")
+        print(f"chat_type: {chat_type}")
+        await update_bet(bet_id=bet_id, prediction=up_down, msg_id=msg_id, result="pending", chat_type=chat_type, chat_id=chat_id)
 
         await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.reply(f"You {up_down} this signal, please wait for your prediction result in next hour!",
-                                      reply_markup=None)
+        if chat_type in ["group", "supergroup"]:
+            response_text = f"@{username} {up_down} this signal, @{username} please wait for your prediction result in the next hour!"
+        else:
+            response_text = f"You {up_down} this signal, please wait for your prediction result in the next hour!"
 
+
+        await callback.message.reply(response_text, reply_markup=None)
 
 @router.message(Command(commands=["xpbalance"]))
 async def handle_xpbalance_command(message: types.Message) -> None:
@@ -167,7 +194,7 @@ async def handle_other_messages(message: types.Message) -> None:
         entry_price=token_price,
         symbol=symbol.upper()
     )
-
+    
     await message.reply_photo(
         photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
         reply_markup=up_down_kb(bet_id),
