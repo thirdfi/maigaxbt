@@ -21,7 +21,7 @@ async def fetch_chart_data(symbol, interval, limit):
         freq = f"{num}min"  # Use 'min' instead of 'T'
     elif unit == "h":
         days = 7  # For hour-based intervals, request 7 days (raw resolution is hourly)
-        freq = f"{num}H"  # "H" is for hours
+        freq = f"{num}h"  # "H" is for hours
     elif unit == "d":
         days = 100  # For day-based intervals, request 100 days to get daily resolution
         freq = f"{num}D"  # "D" is for days
