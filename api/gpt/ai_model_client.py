@@ -44,7 +44,7 @@ async def get_analysis(symbol: str, coin_name: str, interval: str, limit: int, u
                 result = await response.json()            
                 response_content = result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")      
                 print("response_content: ", response_content)          
-                cleaned_content = re.sub(r'<think>.*?</think>', '', response_content, flags=re.DOTALL)
+                cleaned_content = remove_think_tags(response_content)
                 return cleaned_content
             except Exception as e:
                 return f"Error parsing response: {e}"
@@ -99,3 +99,10 @@ async def async_generate_reply(img_base64) -> str | None:
                 return result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")
             except Exception as e:
                 return f"Error parsing response: {e}"
+            
+
+def remove_think_tags(text):
+    while '<think>' in text:
+        text = re.sub(r'<think>[^<>]*</think>', '', text)
+        text = re.sub(r'<think>.*</think>', '', text, flags=re.DOTALL)
+    return text.strip()              
