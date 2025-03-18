@@ -5,6 +5,7 @@ import pandas as pd
 from api.config.application import IO_API_KEY
 from api.gpt.chart_data import fetch_chart_data, compute_indicators
 from api.gpt.prompt_text import img_analyse_prompt, get_system_message, understand_user_message
+import logging
 
 BASE_URL = "https://api.intelligence.io.solutions/api/v1"
 HEADERS = {"Authorization": f"Bearer {IO_API_KEY}"}
@@ -42,8 +43,7 @@ async def get_analysis(symbol: str, coin_name: str, interval: str, limit: int, u
 
             try:
                 result = await response.json()            
-                response_content = result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")      
-                print("response_content: ", response_content)          
+                response_content = result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")          
                 cleaned_content = remove_think_tags(response_content)
                 return cleaned_content
             except Exception as e:
@@ -67,7 +67,9 @@ async def understand_user_prompt(user_prompt: str) -> str:
 
             try:
                 result = await response.json()
-                return result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")
+                response_content = result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")   
+                cleaned_content = remove_think_tags(response_content)
+                return cleaned_content
             except Exception as e:
                 return f"Error parsing response: {e}"
 
@@ -76,7 +78,7 @@ async def async_generate_reply(img_base64) -> str | None:
 
     async with aiohttp.ClientSession() as session:
         payload = {
-            "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B", 
+            "model": "Qwen/Qwen2-VL-7B-Instruct", 
             "messages": [
                 {
                     "role": "user",
@@ -96,7 +98,9 @@ async def async_generate_reply(img_base64) -> str | None:
 
             try:
                 result = await response.json()
-                return result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")
+                response_content = result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")   
+                cleaned_content = remove_think_tags(response_content)
+                return cleaned_content
             except Exception as e:
                 return f"Error parsing response: {e}"
             

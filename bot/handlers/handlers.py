@@ -15,11 +15,9 @@ from api.user.models import User
 from bot.helper import async_request_chart, handle_unknown_coin
 from bot.keyboards.keyboards import  up_down_kb
 from bot.quries import add_bets_to_db, add_gen_data_to_db, get_prompt, get_my_stats, update_bet
-
-
+import json
 
 router = Router()
-
 
 @router.message(Command(commands=["start"]))
 async def handle_start_command(message: types.Message) -> None:
@@ -100,8 +98,7 @@ async def generate_response(message: types.Message) -> None:
                              symbol=coin_symbol.upper())
 
     username = message.from_user.username or f"user_{message.from_user.id}"
-
-    print("Full Response Text:", repr(analysis_reply))  
+    
     await message.reply_photo(
         photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
         reply_markup=up_down_kb(bet_id, message.from_user.id, username, message.chat.type),
@@ -137,7 +134,6 @@ async def bet_up_or_down(callback: types.CallbackQuery) -> None:
         chat_id = callback.from_user.id  
 
     if up_down in ["agree", "disagree"]:
-        print(f"chat_type: {chat_type}")
         await update_bet(bet_id=bet_id, prediction=up_down, msg_id=msg_id, result="pending", chat_type=chat_type, chat_id=chat_id)
 
         await callback.message.edit_reply_markup(reply_markup=None)
@@ -168,8 +164,12 @@ async def handle_other_messages(message: types.Message) -> None:
         text_to_process = message.text.strip()
 
     prompt = await understand_user_prompt(text_to_process)
-
-    dict_prompt = ast.literal_eval(prompt)
+    try:
+        dict_prompt = json.loads(prompt)
+    except json.JSONDecodeError:
+        await message.reply("⚠️ parsing failed，please check the input format")
+        return
+    
     symbol = dict_prompt["symbol"]
     timeframe = dict_prompt["timeframe"]
     user_prompt = dict_prompt["user_prompt"]
@@ -181,7 +181,9 @@ async def handle_other_messages(message: types.Message) -> None:
     coin_id = await handle_unknown_coin(message, symbol)
     if coin_id is None:
         return
-
+    user_id = message.from_user.id
+    username = message.from_user.username or f"user_{user_id}"
+    
     chart_bytes, analysis_reply, token_price = await asyncio.gather(
         async_request_chart(coin_id, timeframe),
         get_analysis(symbol=coin_id, coin_name=symbol.upper(), interval=timeframe, limit=120, user_prompt=user_prompt),
@@ -189,7 +191,7 @@ async def handle_other_messages(message: types.Message) -> None:
     )
 
     bet_id = await add_bets_to_db(
-        user_id=message.from_user.id,
+        user_id=user_id,
         token=coin_id,
         entry_price=token_price,
         symbol=symbol.upper()
@@ -197,7 +199,7 @@ async def handle_other_messages(message: types.Message) -> None:
     
     await message.reply_photo(
         photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
-        reply_markup=up_down_kb(bet_id),
+        reply_markup=up_down_kb(bet_id, user_id, username, message.chat.type), 
         caption=html.escape(analysis_reply)
     )
 
