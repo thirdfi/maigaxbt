@@ -9,15 +9,18 @@ import ast
 from aiogram import Router, types, F
 from aiogram.filters import Command
 
-from api.gpt.ai_model_client import get_analysis, understand_user_prompt, async_generate_reply
+from api.gpt.gpt_client import get_analysis, understand_user_prompt, async_generate_reply
+# from api.gpt.ai_model_client import get_analysis, understand_user_prompt, async_generate_reply
 from api.helpers.helper import async_get_crypto_price
 from api.user.models import User
 from bot.helper import async_request_chart, handle_unknown_coin
 from bot.keyboards.keyboards import  up_down_kb
 from bot.quries import add_bets_to_db, add_gen_data_to_db, get_prompt, get_my_stats, update_bet
 import json
+import logging
 
 router = Router()
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 @router.message(Command(commands=["start"]))
 async def handle_start_command(message: types.Message) -> None:
@@ -156,6 +159,7 @@ async def handle_xpbalance_command(message: types.Message) -> None:
 
 @router.message(F.text)
 async def handle_other_messages(message: types.Message) -> None:
+    logging.debug(f"message: {repr(message.text)}")
     if message.chat.type in ['group', 'supergroup']:
         if not message.text.startswith('@maigaxbt'):
             return
