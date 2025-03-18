@@ -32,7 +32,8 @@ async def get_analysis(symbol: str, coin_name: str, interval: str, limit: int, u
 
     # Call OpenAI API
     response = await aclient.chat.completions.create(
-        model="gpt-4-turbo",
+        # model="gpt-4-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": get_system_message(user_prompt)},
             {"role": "user", "content": rdy_prompt},
@@ -45,7 +46,8 @@ async def get_analysis(symbol: str, coin_name: str, interval: str, limit: int, u
 
 async def understand_user_prompt(user_prompt: str) -> str:
     response = await aclient.chat.completions.create(
-        model="gpt-4-turbo",
+        # model="gpt-4-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": understand_user_message},
             {"role": "user", "content": user_prompt},
@@ -60,7 +62,8 @@ async def async_generate_reply(img_base64) -> str | None:
     img_str = f"data:image/jpeg;base64,{img_base64}"
 
     sentiment_response = await aclient.chat.completions.create(
-        model="gpt-4o",
+        # model="gpt-4o",
+        model="gpt-4o-mini",
         messages=[
             {
                 "role": "user",
