@@ -7,6 +7,7 @@ from api.gpt.chart_data import fetch_chart_data, compute_indicators
 from api.gpt.prompt_text import img_analyse_prompt, get_system_message, understand_user_message
 import logging
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 BASE_URL = "https://api.intelligence.io.solutions/api/v1"
 HEADERS = {"Authorization": f"Bearer {IO_API_KEY}"}
 
@@ -69,7 +70,9 @@ async def understand_user_prompt(user_prompt: str) -> str:
                 result = await response.json()
                 response_content = result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")   
                 cleaned_content = remove_think_tags(response_content)
-                return cleaned_content
+                clean_json= re.sub(r"```json|\```", "", cleaned_content).strip()
+                logging.debug(clean_json)
+                return clean_json
             except Exception as e:
                 return f"Error parsing response: {e}"
 
