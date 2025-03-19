@@ -26,11 +26,11 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 async def handle_start_command(message: types.Message) -> None:
     if message.from_user is None:
         return
-
+    user_id = message.from_user.id
     _, is_new = await User.objects.aget_or_create(
         pk=message.from_user.id,
         defaults={
-            "username": message.from_user.username,
+            "username": message.from_user.username or f"user_{user_id}",
             "first_name": message.from_user.first_name or "",
             "last_name": message.from_user.last_name or "",
         },
@@ -168,13 +168,14 @@ async def handle_other_messages(message: types.Message) -> None:
         text_to_process = message.text.strip()
 
     prompt = await understand_user_prompt(text_to_process)
+    logging.debug(f"prompt: ->{prompt}<-")
     try:
         dict_prompt = json.loads(prompt)
     except json.JSONDecodeError:
         await message.reply("⚠️ parsing failed，please check the input format")
         return
     
-    symbol = dict_prompt["symbol"]
+    symbol = dict_prompt.get("symbol", "").lstrip("$") 
     timeframe = dict_prompt["timeframe"]
     user_prompt = dict_prompt["user_prompt"]
 
@@ -187,13 +188,11 @@ async def handle_other_messages(message: types.Message) -> None:
         return
     user_id = message.from_user.id
     username = message.from_user.username or f"user_{user_id}"
-    
     chart_bytes, analysis_reply, token_price = await asyncio.gather(
         async_request_chart(coin_id, timeframe),
         get_analysis(symbol=coin_id, coin_name=symbol.upper(), interval=timeframe, limit=120, user_prompt=user_prompt),
         async_get_crypto_price(coin_id)
     )
-
     bet_id = await add_bets_to_db(
         user_id=user_id,
         token=coin_id,
@@ -201,12 +200,18 @@ async def handle_other_messages(message: types.Message) -> None:
         symbol=symbol.upper()
     )
     
-    await message.reply_photo(
-        photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
-        reply_markup=up_down_kb(bet_id, user_id, username, message.chat.type), 
-        caption=html.escape(analysis_reply)
-    )
-
+    if not chart_bytes:
+        await message.reply(
+            text=html.escape(analysis_reply),
+            reply_markup=up_down_kb(bet_id, user_id, username, message.chat.type)
+        )
+    else:
+        await message.reply_photo(
+            photo=types.BufferedInputFile(chart_bytes, filename="chart.png"),
+            reply_markup=up_down_kb(bet_id, user_id, username, message.chat.type),
+            caption=html.escape(analysis_reply)
+        )
+        
     await add_gen_data_to_db(analysis_reply, message.from_user.id)
 
 

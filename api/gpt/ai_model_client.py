@@ -71,8 +71,9 @@ async def understand_user_prompt(user_prompt: str) -> str:
                 response_content = result.get('choices', [{}])[0].get('message', {}).get('content', "No content returned")   
                 cleaned_content = remove_think_tags(response_content)
                 clean_json= re.sub(r"```json|\```", "", cleaned_content).strip()
-                logging.debug(clean_json)
-                return cleaned_content
+                logging.debug(f"clean_json: ->{clean_json}<-")
+                return clean_json
+
             except Exception as e:
                 return f"Error parsing response: {e}"
 
