@@ -131,7 +131,7 @@ async def bet_up_or_down(callback: types.CallbackQuery) -> None:
         return
 
     msg_id = callback.message.message_id
-    if chat_type == "group":
+    if chat_type in ["group", "supergroup"]:
         chat_id = callback.message.chat.id
     else:
         chat_id = callback.from_user.id  
