@@ -73,6 +73,7 @@ async def understand_user_prompt(user_prompt: str) -> str:
                 clean_json= re.sub(r"```json|\```", "", cleaned_content).strip()
                 logging.debug(f"clean_json: ->{clean_json}<-")
                 return clean_json
+
             except Exception as e:
                 return f"Error parsing response: {e}"
 
