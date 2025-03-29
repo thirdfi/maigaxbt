@@ -114,8 +114,7 @@ async def generate_response(message: types.Message) -> None:
         return
 
     coin_symbol = args[1]
-
-
+    
     coin_id = await handle_unknown_coin(message, coin_symbol)
     if coin_id is None:
         return
@@ -222,7 +221,9 @@ async def handle_other_messages(message: types.Message) -> None:
 
     coin_id = await handle_unknown_coin(message, symbol)
     if coin_id is None:
+        await message.reply(dict_prompt["none_existing_token"])
         return
+    
     user_id = message.from_user.id
     username = message.from_user.username or f"user_{user_id}"
     chart_bytes, analysis_reply, token_price = await asyncio.gather(
