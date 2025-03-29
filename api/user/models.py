@@ -103,3 +103,24 @@ class Leaderboard(models.Model):
 
     def __str__(self):
         return f"Rank {self.rank}: {self.user.user.username} - {self.user.xp_points} XP"
+
+
+class Wallet(BaseModel):
+    user = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
+    wallet_address = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return f"{self.user.user.username} - Wallet: {self.wallet_address}"
+
+class Transaction(BaseModel):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)  
+    tx_hash = models.CharField(max_length=255, unique=True)
+    amount = models.DecimalField(max_digits=20, decimal_places=8)
+    token = models.CharField(max_length=50)
+    status = models.CharField(max_length=20, default='pending') 
+    chain_id = models.IntegerField(default=0)
+    retry_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.user.username} - TX: {self.tx_hash}"
