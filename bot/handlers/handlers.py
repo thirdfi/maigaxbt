@@ -79,6 +79,9 @@ async def handle_createwallet_command(message: types.Message) -> None:
         return
 
     from_user_id = message.from_user.id
+    
+    await message.answer("⏳ Checking your wallet status...")
+    
     wallet, created = await get_or_create_wallet(from_user_id)
 
     if not created:
@@ -90,15 +93,17 @@ async def handle_createwallet_command(message: types.Message) -> None:
     
     await message.answer("⏳ Creating your wallet... Please wait...")
 
-    profile = await sync_to_async(UserProfile.objects.get)(user__id=from_user_id)
+    profile = await get_my_stats(from_user_id)
+    
     try:
-        tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
+        await mint_xp_token(wallet.wallet_address, profile, 1)
+
+        if profile.xp_points > 0:
+           await mint_xp_token(wallet.wallet_address, profile, profile.xp_points)
 
         await message.answer(
             f"✅ Wallet created successfully!\n\n"
-            f"💳 Address:\n`{wallet.wallet_address}`\n\n"
-            f"🧾 TX Hash: `{tx_hash}`\n"
-            f"📡 Awaiting on-chain confirmation...",
+            f"💳 Address:\n`{wallet.wallet_address}`\n\n",
             parse_mode="Markdown"
         )
     except Exception as e:
