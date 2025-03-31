@@ -119,7 +119,7 @@ def check_success_transactions():
                         f"🧾 Hash: `{tx.tx_hash}`\n"
                         f"🔗 [View on BscScan]({explorer_url})"
                     )
-                    async_to_sync(_send)(tx.user.user.id, msg)
+                    # async_to_sync(_send)(tx.user.user.id, msg)
                 else:
                     tx.status = 'failed'
                 tx.updated_at = now()
