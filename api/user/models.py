@@ -5,8 +5,11 @@ from decimal import Decimal
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import SET_NULL
+from asgiref.sync import async_to_sync
+from api.wallet.mint_service import mint_xp_token 
+import logging
 
-
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class User(AbstractUser):
 
@@ -78,14 +81,24 @@ class Bet(BaseModel):
         if is_correct_prediction:
             self.result = 'won'
             self.user.add_xp(10)
+            xp_reward = 10
             message = (f"🎉 @{self.user.user.username} won the bet on {self.symbol}! +10 XP added! 🎯"
                        if self.chat_type in ["group", "supergroup"]
                        else f"🎉 You won the bet on {self.symbol}! +10 XP added! 🎯")
         else:
             self.result = 'lost'
-            message = (f"☠️ @{self.user.user.username} lost the bet on {self.symbol}. Better luck next time! 😢"
+            self.user.add_xp(1)
+            xp_reward = 1
+            message = (f"☠️ @{self.user.user.username} lost the bet on {self.symbol}. +1 XP for the effort! 💪 Better luck next time! 😢"
                        if self.chat_type in ["group", "supergroup"]
-                       else f"☠️ You lost the bet on {self.symbol}. Better luck next time! 😢")
+                       else f"☠️ You lost the bet on {self.symbol}. +1 XP for the effort! 💪 Better luck next time! 😢")
+            
+        wallet = Wallet.objects.filter(user=self.user).first()     
+        if wallet:
+            try:
+                async_to_sync(mint_xp_token)(wallet.wallet_address, self.user, xp_reward)
+            except Exception as e:
+                logging.error(f"Mint XP token failed for user {self.user.user.username}: {e}")  
             
         send_telegram_message.delay(receiver_id, message, self.msg_id)
         self.save()
