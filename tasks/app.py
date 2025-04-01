@@ -56,7 +56,7 @@ def verify_bets():
             result = bet.check_bet_result(coins_dict[bet.token])
 
             if result:
-                xp_reward, user_profile, msg_id, receiver_id, chat_type = result
+                xp_reward, user_profile, msg_id, receiver_id, chat_type, result_message = result
                 
                 try:
                     wallet = Wallet.objects.get(user=user_profile)
@@ -73,21 +73,17 @@ def verify_bets():
 
                 if tx_hash:
                     tx_url = f"https://testnet.bscscan.com/tx/{tx_hash}"
-                    logging.info(f"Minted {xp_reward} XP to {user_profile.user.username} | TX: {tx_url}")
-                    
-                    if bet.chat_type in ["group", "supergroup"]:
-                        user_display = f"@{user_profile.user.username}"
-                        greeting = f"🎉 Congrats {user_display}, you just received {xp_reward} XP!"
-                    else:
-                        greeting = f"🎉 Congrats! You just received {xp_reward} XP!"
-                        
-                    send_telegram_message.delay(  
-                        receiver_id,
-                        f"{greeting}\n\n"
+
+                    full_message = (
+                        f"{result_message}\n\n"
                         f"🪙 Symbol: {bet.symbol}\n"
                         f"🕒 Bet Time: {localtime(bet.created_at).strftime('%Y-%m-%d %H:%M:%S')}\n"
-                        f"🔗 [View Transaction]({tx_url})",
-                        msg_id)
+                        f"🔗 [View Transaction]({tx_url})"
+                    )
+                        
+                    send_telegram_message.delay(receiver_id, full_message, msg_id)
+                    
+                    logging.info(f"Minted {xp_reward} XP to {user_profile.user.username} | TX: {tx_url}")
                 else:
                     logging.error(f"[Minted Error] Failed to mint XP for {user_profile.user.username}")
 

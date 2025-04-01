@@ -94,14 +94,16 @@ async def handle_createwallet_command(message: types.Message) -> None:
     profile = await UserProfile.objects.select_related('user').aget(user__id=from_user_id)
     
     try:
-        await mint_xp_token(wallet.wallet_address, profile, 1)
-
+        tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
+        tx_url = f"https://testnet.bscscan.com/tx/{tx_hash}"
         if profile.xp_points > 0:
            await mint_xp_token(wallet.wallet_address, profile, profile.xp_points)
 
         await message.answer(
-            f"✅ Wallet created successfully!\n\n"
-            f"💳 Address:\n`{wallet.wallet_address}`\n\n",
+            f"🎉 Your wallet has been successfully created!\n\n"
+            f"💳 Wallet Address:\n`{wallet.wallet_address}`\n\n"
+            f"🪙 You have received *1 XP token* as a welcome gift!\n"
+            f"🔗 [View Transaction on BscScan]({tx_url})",
             parse_mode="Markdown"
         )
     except Exception as e:

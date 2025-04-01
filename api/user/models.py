@@ -91,10 +91,9 @@ class Bet(BaseModel):
                        if self.chat_type in ["group", "supergroup"]
                        else f"☠️ You lost the bet on {self.symbol}. +1 XP for the effort! 💪 Better luck next time! 😢")
             
-        send_telegram_message.delay(receiver_id, message, self.msg_id)
         self.save()
         
-        return xp_reward, self.user, self.msg_id, receiver_id, self.chat_type 
+        return xp_reward, self.user, self.msg_id, receiver_id, self.chat_type, message
 
 class Leaderboard(models.Model):
     user = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
