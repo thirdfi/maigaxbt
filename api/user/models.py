@@ -5,8 +5,6 @@ from decimal import Decimal
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import SET_NULL
-from asgiref.sync import async_to_sync
-from api.wallet.mint_service import mint_xp_token 
 import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -93,16 +91,10 @@ class Bet(BaseModel):
                        if self.chat_type in ["group", "supergroup"]
                        else f"☠️ You lost the bet on {self.symbol}. +1 XP for the effort! 💪 Better luck next time! 😢")
             
-        wallet = Wallet.objects.filter(user=self.user).first()     
-        if wallet:
-            try:
-                async_to_sync(mint_xp_token)(wallet.wallet_address, self.user, xp_reward)
-            except Exception as e:
-                logging.error(f"Mint XP token failed for user {self.user.user.username}: {e}")  
-            
         send_telegram_message.delay(receiver_id, message, self.msg_id)
         self.save()
-
+        
+        return xp_reward, self.user, self.msg_id, receiver_id, self.chat_type 
 
 class Leaderboard(models.Model):
     user = models.OneToOneField(UserProfile, on_delete=models.CASCADE)

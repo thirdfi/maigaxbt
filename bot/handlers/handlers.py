@@ -11,7 +11,6 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from api.gpt.gpt_client import get_analysis, understand_user_prompt, async_generate_reply
-# from api.gpt.ai_model_client import get_analysis, understand_user_prompt, async_generate_reply
 from api.helpers.helper import async_get_crypto_price
 from api.user.models import User, UserProfile
 from api.wallet.mint_service import mint_xp_token
@@ -20,7 +19,6 @@ from bot.keyboards.keyboards import  up_down_kb
 from bot.quries import add_bets_to_db, add_gen_data_to_db, get_or_create_wallet, get_prompt, get_my_stats, update_bet
 import json
 import logging
-from asgiref.sync import sync_to_async
 
 
 router = Router()
@@ -93,7 +91,7 @@ async def handle_createwallet_command(message: types.Message) -> None:
     
     await message.answer("⏳ Creating your wallet... Please wait...")
 
-    profile = await get_my_stats(from_user_id)
+    profile = await UserProfile.objects.select_related('user').aget(user__id=from_user_id)
     
     try:
         await mint_xp_token(wallet.wallet_address, profile, 1)
@@ -133,7 +131,7 @@ async def generate_response(message: types.Message) -> None:
         get_analysis(symbol=coin_id, coin_name=coin_symbol.upper(), interval=prompt.timeframe, limit=120),
         async_get_crypto_price(coin_id)
     )
-
+    logging.error(f"message.from_user.id: {message.from_user.id}")
     bet_id =  await add_bets_to_db(user_id=message.from_user.id,
                              token=coin_id,
                              entry_price=token_price,

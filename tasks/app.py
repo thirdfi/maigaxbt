@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
-
 from aiogram import Bot
 from asgiref.sync import async_to_sync
 from celery import Celery, shared_task
@@ -11,13 +10,15 @@ from celery.schedules import crontab
 from api.config.application import OPBNB_PROVIDER_RPC_URL
 from api.config.celery import tg_bot_token
 from django.utils.timezone import now
-
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.timezone import localtime
 from api.config import celery as config
 from api.helpers.helper import get_crypto_prices
-from api.user.models import Bet, Transaction
+from api.user.models import Bet, Transaction, Wallet
 from api.wallet.mint_service import mint_xp_token
 from web3 import Web3
 import logging
+
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -45,22 +46,55 @@ app.conf.beat_schedule = {
 
 @shared_task
 def verify_bets():
-    """Verify bets whose verification time has passed."""
     bets = Bet.objects.filter(result='pending')
-
     coins_ids = bets.values_list('token', flat=True)
     coins_dict = get_crypto_prices(coins_ids)
 
     for bet in bets:
-        verification_time = bet.created_at + timedelta(hours=bet.verification_time)
+        verification_time = bet.created_at + timedelta(hours=bet.verification_time)    
         if now() >= verification_time:
-            if bet.token in coins_dict:  
-                bet.check_bet_result(coins_dict[bet.token])
-            else:
-                print(f"⚠️ Warning: Token '{bet.token}' not found in price data")
+            result = bet.check_bet_result(coins_dict[bet.token])
+
+            if result:
+                xp_reward, user_profile, msg_id, receiver_id, chat_type = result
+                
+                try:
+                    wallet = Wallet.objects.get(user=user_profile)
+                except ObjectDoesNotExist:
+                    send_telegram_message.delay(
+                        receiver_id,
+                        "Your wallet was not found! Please create your wallet first.",
+                        msg_id,
+                    )             
+                    logging.error(f"[Minted Error] Wallet not found for {user_profile.user.username}")
+                    continue  
+
+                tx_hash = async_to_sync(mint_xp_token)(wallet.wallet_address, user_profile, xp_reward)
+
+                if tx_hash:
+                    tx_url = f"https://testnet.bscscan.com/tx/{tx_hash}"
+                    logging.info(f"Minted {xp_reward} XP to {user_profile.user.username} | TX: {tx_url}")
+                    
+                    if bet.chat_type in ["group", "supergroup"]:
+                        user_display = f"@{user_profile.user.username}"
+                        greeting = f"🎉 Congrats {user_display}, you just received {xp_reward} XP!"
+                    else:
+                        greeting = f"🎉 Congrats! You just received {xp_reward} XP!"
+                        
+                    send_telegram_message.delay(  
+                        receiver_id,
+                        f"{greeting}\n\n"
+                        f"🪙 Symbol: {bet.symbol}\n"
+                        f"🕒 Bet Time: {localtime(bet.created_at).strftime('%Y-%m-%d %H:%M:%S')}\n"
+                        f"🔗 [View Transaction]({tx_url})",
+                        msg_id)
+                else:
+                    logging.error(f"[Minted Error] Failed to mint XP for {user_profile.user.username}")
 
 
     return f"Verified {bets.count()} bets"
+
+
 
 @shared_task
 def check_failed_transactions():
@@ -76,7 +110,7 @@ def check_failed_transactions():
 
             for attempt in range(3):
                 try:
-                    tx_hash, explorer_url = async_to_sync(mint_xp_token)(wallet_address, user, float(amount))
+                    tx_hash = async_to_sync(mint_xp_token)(wallet_address, user, float(amount))
                     if tx_hash:
                         tx.tx_hash = tx_hash
                         tx.status = "pending"
@@ -98,7 +132,7 @@ def check_failed_transactions():
         except Exception as e:
             logging.error(f"[TASK ERROR] Failed to retry mint for tx id={tx.id}: {e}")
 
-    logging.info(f"✅ Retried {retried} failed txs, updated {updated} with new tx_hash.")
+    logging.info(f"Retried {retried} failed txs, updated {updated} with new tx_hash.")
     return f"{updated} transaction(s) updated from failed retry"
 
 @shared_task
@@ -119,17 +153,16 @@ def check_success_transactions():
                         f"🧾 Hash: `{tx.tx_hash}`\n"
                         f"🔗 [View on BscScan]({explorer_url})"
                     )
-                    # async_to_sync(_send)(tx.user.user.id, msg)
                 else:
                     tx.status = 'failed'
                 tx.updated_at = now()
                 tx.save()
                 updated += 1
         except Exception as e:
-            print(f"⚠️ Error checking tx {tx.tx_hash}: {e}")
+            print(f"Error checking tx {tx.tx_hash}: {e}")
             continue
 
-    print(f"🧾 Checked {pending_txs.count()} pending txs, updated {updated}")
+    print(f"Checked {pending_txs.count()} pending txs, updated {updated}")
     return f"{updated} transaction(s) updated"
 
 
