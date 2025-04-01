@@ -1,7 +1,9 @@
+from decimal import Decimal
 from asgiref.sync import sync_to_async
 
 from api.analysis.models import GenData, Prompt
-from api.user.models import UserProfile, Bet
+from api.user.models import UserProfile, Bet, Wallet, Transaction
+from api.wallet.mpc_service import create_wallet
 
 
 @sync_to_async
@@ -44,3 +46,35 @@ def get_prompt():
 @sync_to_async
 def get_my_stats(user_id):
     return UserProfile.objects.get(user__id=user_id)
+
+@sync_to_async
+def get_or_create_wallet(user_id: int) -> Wallet:
+    profile = UserProfile.objects.get(user__id=user_id)
+
+    wallet, created = Wallet.objects.get_or_create(
+        user=profile,
+        defaults={
+            "wallet_address": create_wallet_sync()
+        }
+    )
+    return wallet, created
+
+def create_wallet_sync() -> str:
+    import asyncio
+    return asyncio.run(create_wallet())
+
+
+@sync_to_async
+def record_transaction(
+    wallet, tx_hash: str, user, amount: float, token: str, chain_id: int, status: str, retry_count: int = 0
+):
+    Transaction.objects.create(
+        wallet=wallet,
+        tx_hash=tx_hash,
+        user=user,
+        amount=Decimal(amount),
+        token=token,
+        chain_id=chain_id,
+        retry_count=retry_count,
+        status=status,
+    )

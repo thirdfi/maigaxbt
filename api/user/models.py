@@ -5,8 +5,9 @@ from decimal import Decimal
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import SET_NULL
+import logging
 
-
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class User(AbstractUser):
 
@@ -78,18 +79,21 @@ class Bet(BaseModel):
         if is_correct_prediction:
             self.result = 'won'
             self.user.add_xp(10)
+            xp_reward = 10
             message = (f"🎉 @{self.user.user.username} won the bet on {self.symbol}! +10 XP added! 🎯"
                        if self.chat_type in ["group", "supergroup"]
                        else f"🎉 You won the bet on {self.symbol}! +10 XP added! 🎯")
         else:
             self.result = 'lost'
-            message = (f"☠️ @{self.user.user.username} lost the bet on {self.symbol}. Better luck next time! 😢"
+            self.user.add_xp(1)
+            xp_reward = 1
+            message = (f"☠️ @{self.user.user.username} lost the bet on {self.symbol}. +1 XP for the effort! 💪 Better luck next time! 😢"
                        if self.chat_type in ["group", "supergroup"]
-                       else f"☠️ You lost the bet on {self.symbol}. Better luck next time! 😢")
+                       else f"☠️ You lost the bet on {self.symbol}. +1 XP for the effort! 💪 Better luck next time! 😢")
             
-        send_telegram_message.delay(receiver_id, message, self.msg_id)
         self.save()
-
+        
+        return xp_reward, self.user, self.msg_id, receiver_id, self.chat_type, message
 
 class Leaderboard(models.Model):
     user = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
@@ -103,3 +107,24 @@ class Leaderboard(models.Model):
 
     def __str__(self):
         return f"Rank {self.rank}: {self.user.user.username} - {self.user.xp_points} XP"
+
+
+class Wallet(BaseModel):
+    user = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
+    wallet_address = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return f"{self.user.user.username} - Wallet: {self.wallet_address}"
+
+class Transaction(BaseModel):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)  
+    tx_hash = models.CharField(max_length=255, unique=True)
+    amount = models.DecimalField(max_digits=20, decimal_places=8)
+    token = models.CharField(max_length=50)
+    status = models.CharField(max_length=20, default='pending') 
+    chain_id = models.IntegerField(default=0)
+    retry_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.user.username} - TX: {self.tx_hash}"

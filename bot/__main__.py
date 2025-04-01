@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging.config
 import sys
 
+
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.types import BotCommand
@@ -26,6 +27,7 @@ async def set_bot_commands() -> None:
             BotCommand(command="/start", description="Register the bot"),
             BotCommand(command="/analyse", description="Get crypto coin list for analysis"),
             BotCommand(command="/xpbalance", description="Get your XP balance"),
+            BotCommand(command="/createwallet", description="Create New Wallet Address"),            
         ],
     )
 
