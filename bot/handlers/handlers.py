@@ -39,31 +39,56 @@ async def handle_start_command(message: types.Message) -> None:
     )
     
     # await get_or_create_wallet(user_id=user_id)
-    new_text = textwrap.dedent("""\
-        🎺 Welcome to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
+    if message.chat.type in ['group', 'supergroup']:
+            new_text = textwrap.dedent("""\
+                🎺 Welcome to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
 
-        💡 What you can do:
-        🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
-        🔥 /xpbalance – Check your XP. Because winners track their stats.
-        🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
-        🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-        🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
-        
-        Big trades, big wins—let’s make trading great again! 🚀💰
-        """)
+                💡 What you can do:
+                🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
+                🔥 /xpbalance – Check your XP. Because winners track their stats.
+                🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
+                🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+                
+                Big trades, big wins—let’s make trading great again! 🚀💰
+                """)
 
-    new_text_welcome_back = textwrap.dedent("""\
-        🎺 Welcome back to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
-        
-        💡 What you can do:
-        🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
-        🔥 /xpbalance – Check your XP. Because winners track their stats.
-        🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
-        🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-        🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
-        
-        Big trades, big wins—let’s make trading great again! 🚀💰
-        """)
+            new_text_welcome_back = textwrap.dedent("""\
+                🎺 Welcome back to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
+                
+                💡 What you can do:
+                🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
+                🔥 /xpbalance – Check your XP. Because winners track their stats.
+                🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
+                🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+                
+                Big trades, big wins—let’s make trading great again! 🚀💰
+                """)
+    else: 
+            new_text = textwrap.dedent("""\
+                🎺 Welcome to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
+
+                💡 What you can do:
+                🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
+                🔥 /xpbalance – Check your XP. Because winners track their stats.
+                🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
+                🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
+                🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+                
+                Big trades, big wins—let’s make trading great again! 🚀💰
+                """)
+
+            new_text_welcome_back = textwrap.dedent("""\
+                🎺 Welcome back to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
+                
+                💡 What you can do:
+                🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
+                🔥 /xpbalance – Check your XP. Because winners track their stats.
+                🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
+                🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
+                🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+                
+                Big trades, big wins—let’s make trading great again! 🚀💰
+                """)
  
     if is_new:
         await message.answer(new_text)

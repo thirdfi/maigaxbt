@@ -4,9 +4,9 @@ import asyncio
 import logging.config
 import sys
 
-from aiogram import Bot, Dispatcher, types  
+from aiogram import Bot, Dispatcher  
 from aiogram.client.default import DefaultBotProperties
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats
 
 from api.config.logging import LOGGING
 from bot.config.bot import RUNNING_MODE, TELEGRAM_API_TOKEN, RunningMode
@@ -29,7 +29,7 @@ async def set_bot_commands() -> None:
             BotCommand(command="/xpbalance", description="Get your XP balance"),
             BotCommand(command="/createwallet", description="Create New Wallet Address"),
         ],
-        scope=types.BotCommandScopePrivateChat()
+        scope=BotCommandScopeAllPrivateChats()
     )
 
     await bot.set_my_commands(
@@ -38,7 +38,7 @@ async def set_bot_commands() -> None:
             BotCommand(command="/analyse", description="Get crypto coin list for analysis"),
             BotCommand(command="/xpbalance", description="Get your XP balance"),
         ],
-        scope=types.BotCommandScopeAllGroupChats()
+        scope=BotCommandScopeAllGroupChats()
     )
 
 
