@@ -76,6 +76,10 @@ async def handle_createwallet_command(message: types.Message) -> None:
     if message.from_user is None:
         return
 
+    if message.chat.type in ['group', 'supergroup']:
+        await message.reply("❌ Creating a wallet can only be done in private chat, please PM me and try again!")
+        return
+
     from_user_id = message.from_user.id
     
     await message.answer("⏳ Checking your wallet status...")
