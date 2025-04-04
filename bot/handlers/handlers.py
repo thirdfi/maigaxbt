@@ -16,7 +16,7 @@ from api.user.models import User, UserProfile
 from api.wallet.mint_service import mint_xp_token
 from bot.helper import async_request_chart, handle_unknown_coin
 from bot.keyboards.keyboards import  up_down_kb
-from bot.quries import add_bets_to_db, add_gen_data_to_db, get_or_create_wallet, get_prompt, get_my_stats, update_bet
+from bot.quries import add_bets_to_db, add_gen_data_to_db, add_xp_async, get_or_create_wallet, get_prompt, get_my_stats, get_wallet_if_exist, update_bet
 import json
 import logging
 
@@ -123,10 +123,13 @@ async def handle_createwallet_command(message: types.Message) -> None:
     profile = await UserProfile.objects.select_related('user').aget(user__id=from_user_id)
     
     try:
-        tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
-        tx_url = f"https://testnet.bscscan.com/tx/{tx_hash}"
         if profile.xp_points > 0:
            await mint_xp_token(wallet.wallet_address, profile, profile.xp_points)
+        
+        tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
+        if tx_hash:
+            await add_xp_async(profile, 1)
+        tx_url = f"https://opbnb-testnet.bscscan.com/tx/{tx_hash}"
 
         await message.answer(
             f"🎉 Your wallet has been successfully created!\n\n"
@@ -141,7 +144,11 @@ async def handle_createwallet_command(message: types.Message) -> None:
 
 @router.message(Command(commands=["analyse"]))
 async def generate_response(message: types.Message) -> None:
-
+    wallet = await get_wallet_if_exist(message.from_user.id)
+    if not wallet:
+        await message.reply("❌ You haven't created a wallet yet.\nPlease use /createwallet first.")
+        return
+    
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
         await message.reply("Please provide a trading pair. Example: /analyse btc")
@@ -227,6 +234,11 @@ async def handle_xpbalance_command(message: types.Message) -> None:
 
 @router.message(F.text)
 async def handle_other_messages(message: types.Message) -> None:
+    wallet = await get_wallet_if_exist(message.from_user.id)
+    if not wallet:
+        await message.reply("❌ You haven't created a wallet yet.\nPlease use /createwallet first.")
+        return
+    
     logging.debug(f"message: {repr(message.text)}")
     if message.chat.type in ['group', 'supergroup']:
         if not message.text.startswith('@maigaxbt'):
