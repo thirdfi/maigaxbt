@@ -148,8 +148,6 @@ async def process_create_wallet(user_id: int, message: types.Message):
     profile = await UserProfile.objects.select_related('user').aget(user__id=user_id)
 
     try:
-        if profile.xp_points > 0:
-            await mint_xp_token(wallet.wallet_address, profile, profile.xp_points)
 
         tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
         if tx_hash:
