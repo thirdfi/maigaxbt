@@ -41,6 +41,10 @@ app.conf.beat_schedule = {
         'task': 'tasks.app.check_success_transactions', # Run every 1 second
         'schedule': timedelta(seconds=1)
     },
+        'mint-token-every-second': {
+        'task': 'tasks.app.mint_xp_token', # Run every 1 second
+        'schedule': timedelta(seconds=1)
+    },
 }
 
 
@@ -160,6 +164,10 @@ def check_success_transactions():
 
     print(f"Checked {pending_txs.count()} pending txs, updated {updated}")
     return f"{updated} transaction(s) updated"
+
+# @shared_task
+# def mint_xp_token():
+
 
 
 async def _send(user_id, message, msg_id):
