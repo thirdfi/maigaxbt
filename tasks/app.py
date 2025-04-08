@@ -3,9 +3,13 @@ from __future__ import annotations
 import asyncio
 from datetime import timedelta
 from aiogram import Bot
+from api.gpt.gpt_client import get_analysis
 from asgiref.sync import async_to_sync
+from bot.helper import async_request_chart
+from bot.quries import add_bets_to_db, add_gen_data_to_db, create_new_bot, get_filter_bot, get_or_create_wallet, get_prompt, update_bet
 from celery import Celery, shared_task
 from celery.schedules import crontab
+from random import randint, choice
 
 from api.config.application import OPBNB_PROVIDER_RPC_URL
 from api.config.celery import tg_bot_token
@@ -13,7 +17,7 @@ from django.utils.timezone import now
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.timezone import localtime
 from api.config import celery as config
-from api.helpers.helper import get_crypto_prices
+from api.helpers.helper import async_get_crypto_price, check_coin_id_sync_safe, get_crypto_prices
 from api.user.models import Bet, Transaction, Wallet
 from api.wallet.mint_service import mint_xp_token
 from web3 import Web3
@@ -41,9 +45,18 @@ app.conf.beat_schedule = {
         'task': 'tasks.app.check_success_transactions', # Run every 1 second
         'schedule': timedelta(seconds=1)
     },
-        'mint-token-every-second': {
+    'mint-token-every-second': {
         'task': 'tasks.app.mint_xp_token', # Run every 1 second
         'schedule': timedelta(seconds=1)
+    },      
+    'new_bot_every_2_min': {
+        'task': 'tasks.app.simulate_fake_user_flow',
+        'schedule': timedelta(minutes=2)
+    },
+    'random_bot_flow': {
+        'task': 'tasks.app.simulate_random_existing_user_flow',
+        'schedule': timedelta(minutes=5)
+
     },
 }
 
@@ -168,7 +181,85 @@ def check_success_transactions():
 # @shared_task
 # def mint_xp_token():
 
+TOP_SYMBOLS = [
+    "btc", "eth", "bnb", "xrp", "ada", "doge", "sol", "dot", "matic", "ltc",
+]
 
+@shared_task
+def simulate_fake_user_flow():
+    user = async_to_sync(create_new_bot)() 
+    wallet = async_to_sync(get_or_create_wallet)(user.id) 
+    if not wallet:
+        raise ValueError("Failed to create wallet")
+    symbol = choice(TOP_SYMBOLS)
+    coin_id = check_coin_id_sync_safe(symbol)     
+    prompt = async_to_sync(get_prompt)()
+    if not hasattr(prompt, "timeframe"):
+        raise ValueError("Invalid prompt format")
+    analysis, token_price = async_to_sync(fetch_analysis_and_price)(symbol, prompt.timeframe)
+    async_to_sync(add_gen_data_to_db)(analysis, user.id)
+        
+    bet_id = async_to_sync(add_bets_to_db)(user.id, coin_id, token_price, symbol.upper())
+        
+    prediction = choice(["agree", "disagree"])
+    async_to_sync(update_bet)(bet_id=bet_id, prediction=prediction, result="pending", chat_type="private", chat_id=0)
+        
+    current_price = get_crypto_prices([symbol])[symbol]
+    bet = Bet.objects.get(id=bet_id)
+    result = bet.check_bet_result(current_price)
+        
+    xp_reward, user_profile, _, _, _, _ = result
+    async_to_sync(mint_xp_token)(wallet.wallet_address, user_profile, xp_reward)
+        
+@shared_task
+def simulate_random_existing_user_flow():
+    matching_users = async_to_sync(get_filter_bot)() 
+    user = choice(matching_users)
+    wallet = async_to_sync(get_or_create_wallet)(user.id)
+
+    symbol = choice(TOP_SYMBOLS)
+    coin_id = check_coin_id_sync_safe(symbol)
+
+    prompt = async_to_sync(get_prompt)()
+
+    analysis, token_price = async_to_sync(fetch_analysis_and_price)(symbol, prompt.timeframe)
+    async_to_sync(add_gen_data_to_db)(analysis, user.id)
+
+    bet_id = async_to_sync(add_bets_to_db)(user.id, coin_id, token_price, symbol.upper())
+
+    prediction = choice(["agree", "disagree"])
+    async_to_sync(update_bet)(
+            bet_id=bet_id,
+            prediction=prediction,
+            result="pending",
+            chat_type="private",
+            chat_id=0  
+    )
+
+    price_data = get_crypto_prices([symbol])
+    if not isinstance(price_data, dict):
+        raise ValueError(f"❌ get_crypto_prices failed: {price_data}")
+    current_price = price_data[symbol]
+
+    bet = Bet.objects.get(id=bet_id)
+    result = bet.check_bet_result(current_price)
+    if result:
+        xp_reward, user_profile, *_ = result
+        async_to_sync(mint_xp_token)(wallet.wallet_address, user_profile, xp_reward)
+
+
+
+async def fetch_analysis_and_price(symbol, timeframe):
+    analysis = get_analysis(symbol=symbol, coin_name=symbol.upper(), interval=timeframe, limit=120)
+    price = async_get_crypto_price(symbol)
+
+    if not asyncio.iscoroutine(analysis):
+        raise TypeError(f"get_analysis() did not return coroutine. Got: {type(analysis)}")
+
+    if not asyncio.iscoroutine(price):
+        raise TypeError(f"async_get_crypto_price() did not return coroutine. Got: {type(price)}")
+
+    return await asyncio.gather(analysis, price)
 
 async def _send(user_id, message, msg_id):
     bot = Bot(token=tg_bot_token)

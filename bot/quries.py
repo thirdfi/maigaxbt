@@ -2,9 +2,18 @@ from decimal import Decimal
 from asgiref.sync import sync_to_async
 
 from api.analysis.models import GenData, Prompt
-from api.user.models import UserProfile, Bet, Wallet, Transaction
+from api.user.models import User, UserProfile, Bet, Wallet, Transaction
 from api.wallet.mpc_service import create_wallet
 
+@sync_to_async
+def create_new_bot():
+    user = User.safe_create()
+    return user
+
+@sync_to_async
+def get_filter_bot():
+    user = User.objects.filter(username__startswith="M@!_", username__endswith="_G@")
+    return user
 
 @sync_to_async
 def add_xp_async(profile: UserProfile, amount: int):
