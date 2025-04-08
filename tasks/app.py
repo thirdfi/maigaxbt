@@ -168,7 +168,7 @@ def check_success_transactions():
 
 @shared_task
 def mint_xp_token():
-    users = get_all_user()
+    users = async_to_sync(get_all_user)()
 
     for profile in users:
         try:
