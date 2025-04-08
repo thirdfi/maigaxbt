@@ -67,16 +67,16 @@ async def mint_xp_token(wallet_address: str | None, user: UserProfile, amount: f
         retry_count = 0
         status = "failed"
 
-        # for attempt in range(1 + 3):
-        #     try:
-        #         tx_hash = WEB3_PROVIDER.eth.send_raw_transaction(signed_tx.rawTransaction)
-        #         tx_hash_hex = tx_hash.hex()
-        #         status = "pending"
-        #         break
-        #     except Exception as e:
-        #         logging.warning(f"[MINT RETRY-{attempt}] Failed to send tx: {e}")
-        #         retry_count += 1
-        #         await asyncio.sleep(1)
+        for attempt in range(1 + 3):
+            try:
+                tx_hash = WEB3_PROVIDER.eth.send_raw_transaction(signed_tx.rawTransaction)
+                tx_hash_hex = tx_hash.hex()
+                status = "pending"
+                break
+            except Exception as e:
+                logging.warning(f"[MINT RETRY-{attempt}] Failed to send tx: {e}")
+                retry_count += 1
+                await asyncio.sleep(1)
 
         try:
             tx_hash = WEB3_PROVIDER.eth.send_raw_transaction(signed_tx.rawTransaction)

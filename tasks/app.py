@@ -4,6 +4,7 @@ import asyncio
 from datetime import timedelta
 from aiogram import Bot
 from asgiref.sync import async_to_sync
+from bot.quries import get_all_user
 from celery import Celery, shared_task
 from celery.schedules import crontab
 
@@ -165,9 +166,31 @@ def check_success_transactions():
     print(f"Checked {pending_txs.count()} pending txs, updated {updated}")
     return f"{updated} transaction(s) updated"
 
-# @shared_task
-# def mint_xp_token():
+@shared_task
+def mint_xp_token():
+    users = get_all_user()
 
+    for profile in users:
+        try:
+            xp = profile.xp_points
+            if xp <= 0:
+                logging.info(f"⏩ Skipping {profile.user.username}, no XP to mint.")
+                continue
+
+            wallet = profile.wallet
+            wallet_address = wallet.wallet_address
+
+            result = async_to_sync(mint_xp_token)(wallet_address=wallet_address, user=profile, amount=float(xp))
+
+            if result:
+                logging.info(f"✅ Minted {xp} XP for {profile.user.username}. TX Hash: {result}")
+            else:
+                logging.warning(f"⚠️ Failed to mint XP for {profile.user.username}")
+
+        except ObjectDoesNotExist:
+            logging.warning(f"❌ No wallet found for {profile.user.username}, skipping.")
+        except Exception as e:
+            logging.error(f"🔥 Unexpected error for user {profile.user.username}: {e}")
 
 
 async def _send(user_id, message, msg_id):
