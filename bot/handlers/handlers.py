@@ -16,7 +16,7 @@ from api.user.models import User, UserProfile
 from api.wallet.mint_service import mint_xp_token
 from bot.helper import async_request_chart, handle_unknown_coin
 from bot.keyboards.keyboards import  up_down_kb
-from bot.quries import add_bets_to_db, add_gen_data_to_db, get_or_create_wallet, get_prompt, get_my_stats, update_bet
+from bot.quries import add_bets_to_db, add_gen_data_to_db, add_xp_async, get_or_create_wallet, get_prompt, get_my_stats, get_wallet_if_exist, update_bet
 import json
 import logging
 
@@ -38,7 +38,41 @@ async def handle_start_command(message: types.Message) -> None:
         },
     )
     
-    # await get_or_create_wallet(user_id=user_id)
+    if message.chat.type in ['group', 'supergroup']:
+        new_text = textwrap.dedent("""\
+            🎺 Welcome to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
+
+            💡 What you can do:
+            🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
+            🔥 /xpbalance – Check your XP. Because winners track their stats.
+            🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
+            🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+
+            Big trades, big wins—let’s make trading great again! 🚀💰
+        """)
+
+        new_text_welcome_back = textwrap.dedent("""\
+            🎺 Welcome back to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
+            
+            💡 What you can do:
+            🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
+            🔥 /xpbalance – Check your XP. Because winners track their stats.
+            🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
+            🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+
+            Big trades, big wins—let’s make trading great again! 🚀💰
+        """)
+
+        if is_new:
+            await message.answer(new_text)
+        else:
+            await message.answer(new_text_welcome_back)
+        return
+
+    inline_wallet_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🪙 Create Wallet", callback_data="create_wallet")]
+    ])
+
     new_text = textwrap.dedent("""\
         🎺 Welcome to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
 
@@ -48,43 +82,59 @@ async def handle_start_command(message: types.Message) -> None:
         🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
         🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
         🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
-        
+
         Big trades, big wins—let’s make trading great again! 🚀💰
-        """)
+    """)
 
     new_text_welcome_back = textwrap.dedent("""\
         🎺 Welcome back to MaigaXBT – the greatest trading AI, maybe ever. Some say the best!
-        
+
         💡 What you can do:
         🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
         🔥 /xpbalance – Check your XP. Because winners track their stats.
         🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
         🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
         🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
-        
+
         Big trades, big wins—let’s make trading great again! 🚀💰
-        """)
- 
+    """)
+
     if is_new:
-        await message.answer(new_text)
+        await message.answer(new_text, reply_markup=inline_wallet_kb)
     else:
-        await message.answer(new_text_welcome_back)
+        await message.answer(new_text_welcome_back, reply_markup=inline_wallet_kb)
 
+@router.callback_query(F.data == "create_wallet")
+async def handle_wallet_button(callback: types.CallbackQuery):
+    if callback.message.chat.type in ['group', 'supergroup']:
+        await callback.message.answer(
+            "❌ Wallet can only be created in private chat.\n\n👉 [Click to PM me](https://t.me/maigaxbt_bot)",
+            parse_mode="Markdown"
+        )
+        await callback.answer()
+        return
 
+    await process_create_wallet(callback.from_user.id, callback.message)
+    await callback.answer()
+    
 @router.message(Command(commands=["createwallet"]))
 async def handle_createwallet_command(message: types.Message) -> None:
     if message.from_user is None:
         return
 
     if message.chat.type in ['group', 'supergroup']:
-        await message.reply("❌ Creating a wallet can only be done in private chat, please PM me and try again!")
+        await message.reply(
+            "❌ Creating a wallet can only be done in private chat.\n\n👉 [Click to PM me](https://t.me/maigaxbt_bot)",
+            parse_mode="Markdown"
+        )
         return
 
-    from_user_id = message.from_user.id
+    await process_create_wallet(message.from_user.id, message)
     
+async def process_create_wallet(user_id: int, message: types.Message):
     await message.answer("⏳ Checking your wallet status...")
-    
-    wallet, created = await get_or_create_wallet(from_user_id)
+
+    wallet, created = await get_or_create_wallet(user_id)
 
     if not created:
         await message.answer(
@@ -92,17 +142,18 @@ async def handle_createwallet_command(message: types.Message) -> None:
             parse_mode="Markdown"
         )
         return
-    
+
     await message.answer("⏳ Creating your wallet... Please wait...")
 
-    profile = await UserProfile.objects.select_related('user').aget(user__id=from_user_id)
-    
-    try:
-        tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
-        tx_url = f"https://testnet.bscscan.com/tx/{tx_hash}"
-        if profile.xp_points > 0:
-           await mint_xp_token(wallet.wallet_address, profile, profile.xp_points)
+    profile = await UserProfile.objects.select_related('user').aget(user__id=user_id)
 
+    try:
+
+        tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
+        if tx_hash:
+            await add_xp_async(profile, 1)
+
+        tx_url = f"https://opbnb-testnet.bscscan.com/tx/{tx_hash}"
         await message.answer(
             f"🎉 Your wallet has been successfully created!\n\n"
             f"💳 Wallet Address:\n`{wallet.wallet_address}`\n\n"
@@ -112,11 +163,15 @@ async def handle_createwallet_command(message: types.Message) -> None:
         )
     except Exception as e:
         await message.answer(f"Wallet created but XP token minting failed.\n\nError: {e}")
-        
+
 
 @router.message(Command(commands=["analyse"]))
 async def generate_response(message: types.Message) -> None:
-
+    wallet = await get_wallet_if_exist(message.from_user.id)
+    if not wallet:
+        await message.reply("❌ You haven't created a wallet yet.\nPlease use /createwallet first.")
+        return
+    
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
         await message.reply("Please provide a trading pair. Example: /analyse btc")
@@ -202,6 +257,11 @@ async def handle_xpbalance_command(message: types.Message) -> None:
 
 @router.message(F.text)
 async def handle_other_messages(message: types.Message) -> None:
+    wallet = await get_wallet_if_exist(message.from_user.id)
+    if not wallet:
+        await message.reply("❌ You haven't created a wallet yet.\nPlease use /createwallet first.")
+        return
+    
     logging.debug(f"message: {repr(message.text)}")
     if message.chat.type in ['group', 'supergroup']:
         if not message.text.startswith('@maigaxbt'):

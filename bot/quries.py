@@ -7,6 +7,10 @@ from api.wallet.mpc_service import create_wallet
 
 
 @sync_to_async
+def add_xp_async(profile: UserProfile, amount: int):
+    profile.add_xp(amount)
+
+@sync_to_async
 def add_gen_data_to_db(text, user_id):
 
     GenData.objects.create(
@@ -62,6 +66,14 @@ def get_or_create_wallet(user_id: int) -> Wallet:
 def create_wallet_sync() -> str:
     import asyncio
     return asyncio.run(create_wallet())
+
+@sync_to_async
+def get_wallet_if_exist(user_id):
+    try:
+        profile = UserProfile.objects.get(user__id=user_id)
+        return Wallet.objects.get(user=profile)
+    except (UserProfile.DoesNotExist, Wallet.DoesNotExist):
+        return None
 
 
 @sync_to_async
