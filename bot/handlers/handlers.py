@@ -46,7 +46,7 @@ async def handle_start_command(message: types.Message) -> None:
             🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
             🔥 /xpbalance – Check your XP. Because winners track their stats.
             🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-            🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+            🔥 Bet with MaigaXBT—Earn XP from your moves!
 
             Big trades, big wins—let’s make trading great again! 🚀💰
         """)
@@ -58,7 +58,7 @@ async def handle_start_command(message: types.Message) -> None:
             🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
             🔥 /xpbalance – Check your XP. Because winners track their stats.
             🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-            🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+            🔥 Bet with MaigaXBT—Earn XP from your moves!
 
             Big trades, big wins—let’s make trading great again! 🚀💰
         """)
@@ -81,7 +81,7 @@ async def handle_start_command(message: types.Message) -> None:
         🔥 /xpbalance – Check your XP. Because winners track their stats.
         🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
         🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-        🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+        🔥 Bet with MaigaXBT—Earn XP from your moves!
 
         Big trades, big wins—let’s make trading great again! 🚀💰
     """)
@@ -94,7 +94,7 @@ async def handle_start_command(message: types.Message) -> None:
         🔥 /xpbalance – Check your XP. Because winners track their stats.
         🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
         🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-        🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+        🔥 Bet with MaigaXBT—Earn XP from your moves!
 
         Big trades, big wins—let’s make trading great again! 🚀💰
     """)
@@ -192,7 +192,7 @@ async def generate_response(message: types.Message) -> None:
         get_analysis(symbol=coin_id, coin_name=coin_symbol.upper(), interval=prompt.timeframe, limit=120),
         async_get_crypto_price(coin_id)
     )
-    logging.error(f"message.from_user.id: {message.from_user.id}")
+
     bet_id =  await add_bets_to_db(user_id=message.from_user.id,
                              token=coin_id,
                              entry_price=token_price,
