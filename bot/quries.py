@@ -16,6 +16,10 @@ def get_filter_bot():
     return user
 
 @sync_to_async
+def get_all_user():
+    return UserProfile.objects.all()
+
+@sync_to_async
 def add_xp_async(profile: UserProfile, amount: int):
     profile.add_xp(amount)
 
