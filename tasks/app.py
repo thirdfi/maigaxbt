@@ -4,6 +4,7 @@ import asyncio
 from datetime import timedelta
 from aiogram import Bot
 from asgiref.sync import async_to_sync
+from bot.quries import get_all_user
 from celery import Celery, shared_task
 from celery.schedules import crontab
 
@@ -33,18 +34,14 @@ app.conf.beat_schedule = {
         'task': 'tasks.app.verify_bets',
         'schedule': crontab(minute='*/57'),  # Run every 1 hour
     },
-    'check-transactions-every-1-minute': {
-        'task': 'tasks.app.check_failed_transactions', # Run every 1 minute
-        'schedule': crontab(minute='*'),
-    },
-    'check-success-transactions-every-second': {
-        'task': 'tasks.app.check_success_transactions', # Run every 1 second
-        'schedule': timedelta(seconds=1)
-    },
-        'mint-token-every-second': {
-        'task': 'tasks.app.mint_xp_token', # Run every 1 second
-        'schedule': timedelta(seconds=1)
-    },
+    # 'check-transactions-every-1-minute': {
+    #     'task': 'tasks.app.check_failed_transactions', # Run every 1 minute
+    #     'schedule': crontab(minute='*'),
+    # },
+    # 'check-success-transactions-every-second': {
+    #     'task': 'tasks.app.check_success_transactions', # Run every 1 second
+    #     'schedule': timedelta(seconds=1)
+    # },
 }
 
 
@@ -164,10 +161,6 @@ def check_success_transactions():
 
     print(f"Checked {pending_txs.count()} pending txs, updated {updated}")
     return f"{updated} transaction(s) updated"
-
-# @shared_task
-# def mint_xp_token():
-
 
 
 async def _send(user_id, message, msg_id):

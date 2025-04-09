@@ -7,6 +7,10 @@ from api.wallet.mpc_service import create_wallet
 
 
 @sync_to_async
+def get_all_user():
+    return UserProfile.objects.all()
+
+@sync_to_async
 def add_xp_async(profile: UserProfile, amount: int):
     profile.add_xp(amount)
 
