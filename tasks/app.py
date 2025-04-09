@@ -34,18 +34,14 @@ app.conf.beat_schedule = {
         'task': 'tasks.app.verify_bets',
         'schedule': crontab(minute='*/57'),  # Run every 1 hour
     },
-    'check-transactions-every-1-minute': {
-        'task': 'tasks.app.check_failed_transactions', # Run every 1 minute
-        'schedule': crontab(minute='*'),
-    },
-    'check-success-transactions-every-second': {
-        'task': 'tasks.app.check_success_transactions', # Run every 1 second
-        'schedule': timedelta(seconds=1)
-    },
-        'mint-token-every-second': {
-        'task': 'tasks.app.mint_xp_token', # Run every 1 second
-        'schedule': timedelta(seconds=1)
-    },
+    # 'check-transactions-every-1-minute': {
+    #     'task': 'tasks.app.check_failed_transactions', # Run every 1 minute
+    #     'schedule': crontab(minute='*'),
+    # },
+    # 'check-success-transactions-every-second': {
+    #     'task': 'tasks.app.check_success_transactions', # Run every 1 second
+    #     'schedule': timedelta(seconds=1)
+    # },
 }
 
 
@@ -165,32 +161,6 @@ def check_success_transactions():
 
     print(f"Checked {pending_txs.count()} pending txs, updated {updated}")
     return f"{updated} transaction(s) updated"
-
-@shared_task
-def mint_xp_token():
-    users = async_to_sync(get_all_user)()
-
-    for profile in users:
-        try:
-            xp = profile.xp_points
-            if xp <= 0:
-                logging.info(f"⏩ Skipping {profile.user.username}, no XP to mint.")
-                continue
-
-            wallet = profile.wallet
-            wallet_address = wallet.wallet_address
-
-            result = async_to_sync(mint_xp_token)(wallet_address=wallet_address, user=profile, amount=float(xp))
-
-            if result:
-                logging.info(f"✅ Minted {xp} XP for {profile.user.username}. TX Hash: {result}")
-            else:
-                logging.warning(f"⚠️ Failed to mint XP for {profile.user.username}")
-
-        except ObjectDoesNotExist:
-            logging.warning(f"❌ No wallet found for {profile.user.username}, skipping.")
-        except Exception as e:
-            logging.error(f"🔥 Unexpected error for user {profile.user.username}: {e}")
 
 
 async def _send(user_id, message, msg_id):

@@ -53,9 +53,10 @@ async def retrieve_private_key(wallet_address: str) -> str:
 
     if len(shares) < 2:
         raise Exception("Not enough shares to recover private key")
-
+    
     private_key_bytes = combine(shares)
-    private_key = private_key_bytes.decode("utf-8")  
+    # private_key = private_key_bytes.decode("utf-8")  
+    private_key = "0x" + private_key_bytes.hex()  
     return private_key
 
 

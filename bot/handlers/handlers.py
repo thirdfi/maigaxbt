@@ -152,15 +152,15 @@ async def process_create_wallet(user_id: int, message: types.Message):
         tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
         if tx_hash:
             await add_xp_async(profile, 1)
-
-        tx_url = f"https://opbnb-testnet.bscscan.com/tx/{tx_hash}"
-        await message.answer(
+            tx_url = f"https://opbnb-testnet.bscscan.com/tx/{tx_hash}"
+            await message.answer(
             f"🎉 Your wallet has been successfully created!\n\n"
             f"💳 Wallet Address:\n`{wallet.wallet_address}`\n\n"
             f"🪙 You have received *1 XP token* as a welcome gift!\n"
             f"🔗 [View Transaction on BscScan]({tx_url})",
             parse_mode="Markdown"
-        )
+            )
+
     except Exception as e:
         await message.answer(f"Wallet created but XP token minting failed.\n\nError: {e}")
 
