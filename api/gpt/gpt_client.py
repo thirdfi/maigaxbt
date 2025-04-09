@@ -5,11 +5,11 @@ import openai
 from api.config.application import GPT_API_KEY
 from api.gpt.chart_data import fetch_chart_data, compute_indicators
 from api.gpt.prompt_text import img_analyse_prompt, get_system_message, understand_user_message
+import logging
 
 aclient = openai.AsyncClient(api_key=GPT_API_KEY)
 
-
-
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 async def get_analysis(symbol: str, coin_name: str, interval: str, limit: int, user_prompt: str = "") -> str:
     df = await fetch_chart_data(symbol=symbol, interval=interval, limit=limit)
@@ -19,7 +19,7 @@ async def get_analysis(symbol: str, coin_name: str, interval: str, limit: int, u
     df = compute_indicators(df)
     last_10 = df.tail(10)[["timestamp", "close", "rsi", "macd", "macd_signal", "bb_upper", "bb_lower"]].to_dict(
         orient="records")
-
+    
     # Format market data into readable text
     rdy_prompt = f"\n\nAnalyzing coin name: **{coin_name}** on the **{interval}** timeframe:\n\n"
 
@@ -39,7 +39,7 @@ async def get_analysis(symbol: str, coin_name: str, interval: str, limit: int, u
             {"role": "user", "content": rdy_prompt},
         ],
     )
-
+    
     return response.choices[0].message.content
 
 

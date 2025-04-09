@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import SET_NULL
+import uuid
 import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -15,6 +16,30 @@ class User(AbstractUser):
         UserProfile.objects.get_or_create(user=self)
 
         super().save(*args, **kwargs)
+
+   @staticmethod
+   def safe_create() -> "User":
+        temp_username = f"temp_{uuid.uuid4().hex[:10]}"
+        original_save = User.save
+
+        def minimal_save(self, *args, **kwargs):
+            return super(User, self).save(*args, **kwargs)
+
+        User.save = minimal_save
+
+        try:
+            user = User(username=temp_username)
+            user.save(force_insert=True)
+        finally:
+            User.save = original_save
+
+        user.username = f"M@!_{user.id}_G@"
+        user.save(update_fields=["username"])
+        user.refresh_from_db()
+
+        UserProfile.objects.get(user=user)
+        
+        return user
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=False, null=True)
