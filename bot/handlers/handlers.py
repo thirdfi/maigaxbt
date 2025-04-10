@@ -10,6 +10,7 @@ from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from api.config.application import PRODUCTION
 from api.gpt.gpt_client import get_analysis, understand_user_prompt, async_generate_reply
 from api.helpers.helper import async_get_crypto_price
 from api.user.models import User, UserProfile
@@ -152,7 +153,10 @@ async def process_create_wallet(user_id: int, message: types.Message):
         tx_hash = await mint_xp_token(wallet.wallet_address, profile, 1)
         if tx_hash:
             await add_xp_async(profile, 1)
-            tx_url = f"https://opbnb-testnet.bscscan.com/tx/{tx_hash}"
+            if PRODUCTION:
+                tx_url = f"https://opbnb.bscscan.com/tx/{tx_hash}"
+            else:
+                tx_url = f"https://opbnb-testnet.bscscan.com/tx/{tx_hash}"
             await message.answer(
             f"🎉 Your wallet has been successfully created!\n\n"
             f"💳 Wallet Address:\n`{wallet.wallet_address}`\n\n"

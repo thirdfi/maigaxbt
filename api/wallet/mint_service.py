@@ -3,7 +3,7 @@ import asyncio
 from datetime import time
 from typing import Optional
 
-from api.config.application import BASE_CHAIN_ID, OPBNB_PROVIDER_RPC_URL, OPBNB_USDT_TOKEN_ADDRESS, XP_TOKEN_CONTRACT_ADDRESS, XP_OWNER_ADDRESS
+from api.config.application import BASE_CHAIN_ID, OPBNB_PROVIDER_RPC_URL, OPBNB_USDT_TOKEN_ADDRESS, XP_TOKEN_CONTRACT_ADDRESS, XP_OWNER_ADDRESS, XP_OWNER_PRIVATE_KEY
 from api.wallet.mpc_service import retrieve_private_key
 from api.user.models import UserProfile, Wallet
 from bot.quries import record_transaction
@@ -46,9 +46,9 @@ async def mint_xp_token(wallet_address: str | None, user: UserProfile, amount: f
         logging.error(f"[MINT ERROR] ❌ Wallet not found for user: {user}")
         return None
 
+
     try:
-        private_key = await retrieve_private_key(XP_OWNER_ADDRESS)
-        owner_account = Account.from_key(private_key)
+        owner_account = Account.from_key(XP_OWNER_PRIVATE_KEY)
         nonce = WEB3_PROVIDER.eth.get_transaction_count(owner_account.address)
 
         tx = XP_CONTRACT.functions.mint(
