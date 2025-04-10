@@ -16,7 +16,7 @@ from api.user.models import User, UserProfile
 from api.wallet.mint_service import mint_xp_token
 from bot.helper import async_request_chart, handle_unknown_coin
 from bot.keyboards.keyboards import  up_down_kb
-from bot.quries import add_bets_to_db, add_gen_data_to_db, add_xp_async, get_or_create_wallet, get_prompt, get_my_stats, get_wallet_if_exist, update_bet
+from bot.quries import add_bets_to_db, add_gen_data_to_db, add_xp_async, get_or_create_wallet, get_prompt, get_my_stats, get_wallet_if_exist, is_user_over_limit, update_bet
 import json
 import logging
 
@@ -45,8 +45,8 @@ async def handle_start_command(message: types.Message) -> None:
             💡 What you can do:
             🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
             🔥 /xpbalance – Check your XP. Because winners track their stats.
-            🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-            🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+            🔥 NEW! Ask MaigaXBT anything about technical analysis on *any tradable token* — sharper than those so-called “experts.”
+            🔥 Bet with MaigaXBT—Earn XP from your moves!
 
             Big trades, big wins—let’s make trading great again! 🚀💰
         """)
@@ -57,8 +57,8 @@ async def handle_start_command(message: types.Message) -> None:
             💡 What you can do:
             🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
             🔥 /xpbalance – Check your XP. Because winners track their stats.
-            🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-            🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+            🔥 NEW! Ask MaigaXBT anything about technical analysis on *any tradable token* — sharper than those so-called “experts.”
+            🔥 Bet with MaigaXBT—Earn XP from your moves!
 
             Big trades, big wins—let’s make trading great again! 🚀💰
         """)
@@ -80,8 +80,8 @@ async def handle_start_command(message: types.Message) -> None:
         🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
         🔥 /xpbalance – Check your XP. Because winners track their stats.
         🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
-        🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-        🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+        🔥 NEW! Ask MaigaXBT anything about technical analysis on *any tradable token* — sharper than those so-called “experts.”
+        🔥 Bet with MaigaXBT—Earn XP from your moves!
 
         Big trades, big wins—let’s make trading great again! 🚀💰
     """)
@@ -93,8 +93,8 @@ async def handle_start_command(message: types.Message) -> None:
         🔥 /analyse {token} – Powerful technical analysis, no fake news, just real insights.
         🔥 /xpbalance – Check your XP. Because winners track their stats.
         🔥 /createwallet – Create your Web3 wallet and instantly receive 1 XP token!
-        🔥 NEW! Ask MaigaXBT anything about technical analysis—better than some so-called “experts.”
-        🔥 Predict AI signals—right or wrong? Your feedback trains MaigaXBT and earns XP!
+        🔥 NEW! Ask MaigaXBT anything about technical analysis on *any tradable token* — sharper than those so-called “experts.”
+        🔥 Bet with MaigaXBT—Earn XP from your moves!
 
         Big trades, big wins—let’s make trading great again! 🚀💰
     """)
@@ -171,6 +171,16 @@ async def generate_response(message: types.Message) -> None:
     if not wallet:
         await message.reply("❌ You haven't created a wallet yet.\nPlease use /createwallet first.")
         return
+
+    is_over, next_time = await is_user_over_limit(message.from_user.id)
+    if is_over:
+        next_time_str = next_time.strftime("%Y-%m-%d %H:%M:%S")
+        await message.reply(
+           f"⚠️ <b>Analysis Limit Reached</b> ⚠️\n"
+           f"📊 You've reached the maximum of <b>20 analyses</b> per hour.\n"
+           f"⏳ You can try again at: <b>{next_time_str}</b>\n"                      
+        )
+        return 
     
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
@@ -186,13 +196,13 @@ async def generate_response(message: types.Message) -> None:
     await message.reply("⏳ Generating answer, please wait...")
 
     prompt = await get_prompt()
-
+    
     chart_bytes, analysis_reply, token_price = await asyncio.gather(
         async_request_chart(coin_id, prompt.timeframe),
         get_analysis(symbol=coin_id, coin_name=coin_symbol.upper(), interval=prompt.timeframe, limit=120),
         async_get_crypto_price(coin_id)
     )
-    logging.error(f"message.from_user.id: {message.from_user.id}")
+
     bet_id =  await add_bets_to_db(user_id=message.from_user.id,
                              token=coin_id,
                              entry_price=token_price,
@@ -261,6 +271,16 @@ async def handle_other_messages(message: types.Message) -> None:
     if not wallet:
         await message.reply("❌ You haven't created a wallet yet.\nPlease use /createwallet first.")
         return
+    
+    is_over, next_time = await is_user_over_limit(message.from_user.id)
+    if is_over:
+        next_time_str = next_time.strftime("%Y-%m-%d %H:%M:%S")
+        await message.reply(
+           f"⚠️ <b>Analysis Limit Reached</b> ⚠️\n"
+           f"📊 You've reached the maximum of <b>20 analyses</b> per hour.\n"
+           f"⏳ You can try again at: <b>{next_time_str}</b>\n"                
+        )
+        return 
     
     logging.debug(f"message: {repr(message.text)}")
     if message.chat.type in ['group', 'supergroup']:

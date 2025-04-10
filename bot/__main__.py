@@ -4,6 +4,9 @@ import asyncio
 import logging.config
 import sys
 
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 from aiogram import Bot, Dispatcher  
 from aiogram.client.default import DefaultBotProperties
 from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats
@@ -40,7 +43,6 @@ async def set_bot_commands() -> None:
         ],
         scope=BotCommandScopeAllGroupChats()
     )
-
 
 @dispatcher.startup()
 async def on_startup() -> None:

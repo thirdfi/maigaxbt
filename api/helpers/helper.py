@@ -23,6 +23,12 @@ def get_coin_id_from_symbol(token):
 
     return None
 
+def check_coin_id_sync_safe(symbol):
+    coin_id = get_coin_id_from_symbol(symbol)
+    if isinstance(coin_id, str):
+        return coin_id
+    return None
+
 def get_crypto_price(coin_id):
     url = "https://pro-api.coingecko.com/api/v3/simple/price"
     params = {
