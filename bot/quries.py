@@ -12,6 +12,10 @@ def create_new_bot():
     user = User.safe_create()
     return user
 
+@sync_to_async
+def get_filter_bot():
+    user = User.objects.filter(username__startswith="M@!_", username__endswith="_G@")
+    return user
 
 @sync_to_async
 def get_all_user():
@@ -22,13 +26,13 @@ def add_xp_async(profile: UserProfile, amount: int):
     profile.add_xp(amount)
 
 @sync_to_async
-def is_user_over_limit(user_id, hours=0, minutes=1, seconds=0):
+def is_user_over_limit(user_id, hours=1, minutes=0, seconds=0):
     time_limit = timedelta(hours=hours, minutes=minutes, seconds=seconds)
     time_threshold = timezone.now() - time_limit
 
     recent_uses = GenData.objects.filter(user_id=user_id, created_at__gte=time_threshold).count()
 
-    if recent_uses >= 1:
+    if recent_uses >= 20:
         first_recent = GenData.objects.filter(user_id=user_id, created_at__gte=time_threshold).order_by("created_at").first()
         if first_recent:
             next_available_time = first_recent.created_at + time_limit
@@ -101,6 +105,7 @@ def get_wallet_if_exist(user_id):
         return Wallet.objects.get(user=profile)
     except (UserProfile.DoesNotExist, Wallet.DoesNotExist):
         return None
+
 
 @sync_to_async
 def record_transaction(
