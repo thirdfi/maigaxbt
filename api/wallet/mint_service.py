@@ -49,7 +49,7 @@ async def mint_xp_token(wallet_address: str | None, user: UserProfile, amount: f
 
     try:
         owner_account = Account.from_key(XP_OWNER_PRIVATE_KEY)
-        nonce = WEB3_PROVIDER.eth.get_transaction_count(owner_account.address)
+        nonce = WEB3_PROVIDER.eth.get_transaction_count(owner_account.address, 'pending')
 
         tx = XP_CONTRACT.functions.mint(
             wallet_address,
